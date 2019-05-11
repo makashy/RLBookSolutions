@@ -20,8 +20,8 @@ class Agent():
 
     Arguments:
         grid_map: Shape of map
-        constant_speed_probability: The probability at each time step that the velocity increments are both zero
-                          (making the environment nondeterministic)
+        constant_speed_probability: The probability at each time
+            step that the velocity increments are both zero
     """
 
     def __init__(self,
@@ -30,6 +30,12 @@ class Agent():
         self.grid_map = grid_map
         self.constant_speed_probability = constant_speed_probability
         self.A = [(i, j) for i in range(-1, 2) for j in range(-1, 2)]
+        self.vx_max = 5
+        self.vx_min = 0
+        self.vx_range = self.vx_max - self.vx_min + 1
+        self.vy_max = 5
+        self.vy_min = 0
+        self.vy_range = self.vy_max - self.vy_min + 1
 
     def debug(self, data):
         print(data)
@@ -49,7 +55,8 @@ class Agent():
         # next velocity
         v_n = tuple(np.array(s[2:]) + np.array(self.A[a]))
         # velocity limmit between 0 and 5
-        v_n = (min(5, max(-5, v_n[0])), min(5, max(-5, v_n[1])))
+        v_n = (min(self.vx_max, max(self.vx_min, v_n[0])), min(
+            self.vy_max, max(self.vy_min, v_n[1])))
         # next location
         l_n = tuple(np.array(s[:2]) + np.array(v_n))
         # location limmit in grid_map
@@ -67,7 +74,7 @@ class Agent():
         return s_n, r
 
     def environment(self, s, a):
-        
+
         if np.random.uniform() < self.constant_speed_probability:
             return self.deterministic_move(s, ZERO_ACCELERATION)
         return self.deterministic_move(s, a)
@@ -89,19 +96,21 @@ class Agent():
     def value_iteration(self, iteration):
 
         # 1. Initialization
-        Q = np.ones(
-            shape=(self.grid_map.shape[0], self.grid_map.shape[1], 11, 11, 9)) * ZERO_ACCELERATION
-        C = np.zeros(
-            shape=(self.grid_map.shape[0], self.grid_map.shape[1], 11, 11, 9))
-        pi = np.ones(
-            shape=(self.grid_map.shape[0], self.grid_map.shape[1], 11, 11)) * ZERO_ACCELERATION
 
-        x = 0
+        # velocity space size
+        Q = np.zeros(
+            shape=(self.grid_map.shape[0], self.grid_map.shape[1], self.vx_range, self.vy_range, 9))
+        C = np.zeros(
+            shape=(self.grid_map.shape[0], self.grid_map.shape[1], self.vx_range, self.vy_range, 9))
+        pi = np.ones(
+            shape=(self.grid_map.shape[0], self.grid_map.shape[1], self.vx_range, self.vy_range)) * ZERO_ACCELERATION
+
+        count = 0
         # 2. Policy Evaluation  & Policy Improvement
-        while x < iteration:
-            self.debug(x/np.float(iteration))
+        while count < iteration:
+            self.debug(count / np.float(iteration))
             gamma = 0.9
-            x = x + 1
+            count = count + 1
             episode = self.episode_generator()
             G = 0
             W = 1
@@ -117,45 +126,3 @@ class Agent():
                     break
                 W = W * 1 / p
         return pi
-
-    # def arrow(self, i, j, pi):
-    #     """ Map for policy"""
-    #     if self.map[i, j] == 0:
-    #         return self.A[pi[i, j]]
-    #     return tuple([0, 0])
-
-    # def plot_result(self, pi, V):
-    #     X = np.arange(0, self.map_shape[0], 1)
-    #     Y = np.arange(0, self.map_shape[1], 1)
-    #     direction = np.array(
-    #         [[self.arrow(i, j, pi)
-    #           for j in range(self.map_shape[1])]
-    #          for i in range(self.map_shape[0])])
-
-    #     q = plt.quiver(X, Y, direction[:, :, 1], direction[:, :, 0])
-    #     plt.quiverkey(
-    #         q,
-    #         X=1.1,
-    #         Y=1.1,
-    #         U=10,
-    #         label='Quiver key, length = 10',
-    #         labelpos='E')
-
-    #     plt.imshow(V)
-    #     plt.gca().invert_yaxis()
-    #     y = np.copy(self.goal[1])
-    #     x = np.copy(self.goal[0])
-    #     if x < 0:
-    #         x = self.map_shape[0] + x
-    #     if y < 0:
-    #         y = self.map_shape[1] + y
-    #     plt.plot(
-    #         x,
-    #         y,
-    #         '*',
-    #         ms=10,
-    #         mfc='yellow',
-    #     )
-    #     plt.hot()
-    #     plt.colorbar()
-    #     plt.title("Policy in arrows, State Values in colors")
