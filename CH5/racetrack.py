@@ -93,7 +93,7 @@ class Agent():
             if self.grid_map[s[:2]] == GOAL:
                 return episode
 
-    def value_iteration(self, iteration):
+    def  off_policy_MC_control(self, iteration):
 
         # 1. Initialization
 
