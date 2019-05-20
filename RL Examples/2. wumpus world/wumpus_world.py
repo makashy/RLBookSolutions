@@ -191,10 +191,11 @@ class agent():
 
         while True:
             a = np.int16(np.random.uniform(0, 4))
-            s, r = self.deterministic_move(s[:-1], a)
+            s_n, r = self.deterministic_move(s[:-1], a)
             episode.append(s + (a, r, 1.0/4))
             if r in (REWARD_DEATH, REWARD_WIN):
                 return episode
+            s = s_n
 
     def off_policy_MC_control(self,
                               iteration,
