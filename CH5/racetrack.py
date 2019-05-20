@@ -88,10 +88,11 @@ class Agent():
 
         while True:
             a = np.int16(np.random.uniform(0, 9))
-            s, r = self.environment(s, a)
+            s_n, r = self.environment(s, a)
             episode.append(s + (a, r, 1.0/9))
             if self.grid_map[s[:2]] == GOAL:
                 return episode
+            s = s_n
 
     def  off_policy_MC_control(self, iteration):
 
