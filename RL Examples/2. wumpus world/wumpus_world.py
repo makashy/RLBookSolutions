@@ -124,7 +124,7 @@ class agent():
                 self.episode_map[new_location] = DEAD_WUMPUS
                 self.agent_arrow = self.agent_arrow - 1
                 if playing_game:
-                    print('you killed an wumpus!')
+                    print('you killed a wumpus!')
 
             else:
                 reward = REWARD_DEATH
@@ -145,12 +145,10 @@ class agent():
             self.__init__(self.length, self.width, self.pit_num,
                           self.wumpus_num, self.arrow_num)
 
-        if bool(self.arrow_num):
+        if self.arrow_num > 0:
             new_state = new_location + (1,)
         else:
             new_state = new_location + (0,)
-        # new_state = new_location + (bool(self.arrow_num),)
-        # print("new_state"+str(new_state))
 
         return new_state, reward
 
@@ -182,7 +180,7 @@ class agent():
         )
         interact_manual(self.manual_game, move_option=radio_buttons)
 
-    def episode_generator(self):
+    def random_episode(self):
 
         # first state
         s = (0, 0, 0)
@@ -193,6 +191,28 @@ class agent():
             a = np.int16(np.random.uniform(0, 4))
             s_n, r = self.deterministic_move(s[:-1], a)
             episode.append(s + (a, r, 1.0/4))
+            if r in (REWARD_DEATH, REWARD_WIN):
+                return episode
+            s = s_n
+
+    def epsilon_greedy(self, Q, s, num_action, epsilon):
+        if np.random.uniform() < epsilon:
+            a = randrange(0, num_action)
+        else:
+            a = Q[s].argmax()
+        return a
+
+    def epsilon_greedy_episode(self, Q, epsilon):
+
+        # first state
+        s = (0, 0, 0)
+        # a log list for episode
+        episode = list()
+
+        while True:
+            a = self.epsilon_greedy(Q, s, self.num_action, epsilon)
+            s_n, r = self.deterministic_move(s[:-1], a)
+            episode.append(s + (a, r, 0))
             if r in (REWARD_DEATH, REWARD_WIN):
                 return episode
             s = s_n
@@ -219,16 +239,14 @@ class agent():
         while count < iteration:
             self.agent_arrow = 0
             self.episode_map = self.map.copy()
-            # self.debug(count / np.float(iteration))
-            gamma = 1
+            self.debug(count / np.float(iteration))
             count = count + 1
-            episode = self.episode_generator()
+            episode = self.random_episode()
             G = 0
             W = 1
             for e in reversed(episode):
-                r = e[4]
-                self.debug(r)
                 a = e[3]
+                r = e[4]
                 p = e[5]
                 G = r + gamma*G
                 C[e[:-2]] = C[e[:-2]] + W
@@ -240,12 +258,40 @@ class agent():
             G_log = np.append(G_log, G)
         return Q, C, G_log, pi
 
-    def epsilon_greedy(self, Q, s, num_action, epsilon):
-        if np.random.uniform() < epsilon:
-            a = randrange(0, num_action)
-        else:
-            a = Q[s].argmax()
-        return a
+    def on_policy_MC_control(self,
+                             iteration,
+                             Q=None,
+                             N=None,
+                             G_log=None,
+                             epsilon=0.05,
+                             gamma=1):
+
+        if Q is None:
+            Q = np.random.rand(self.length, self.width,
+                               self.arrow_possession_states, self.num_action)
+        if N is None:
+            N = np.zeros(
+                shape=(self.length, self.width, self.arrow_possession_states, self.num_action))
+        if G_log is None:
+            G_log = np.zeros(0)
+
+        count = 0
+        # 2. Policy Evaluation  & Policy Improvement
+        while count < iteration:
+            self.agent_arrow = 0
+            self.episode_map = self.map.copy()
+            self.debug(count / np.float(iteration))
+            count = count + 1
+            episode = self.epsilon_greedy_episode(Q, epsilon)
+            G = 0
+            for e in reversed(episode):
+                r = e[4]
+                G = r + gamma*G
+                # if
+                N[e[:-2]] = N[e[:-2]] + 1
+                Q[e[:-2]] = Q[e[:-2]] + 1/N[e[:-2]]*(G - Q[e[:-2]])
+            G_log = np.append(G_log, G)
+        return Q, N, G_log
 
     def sarsa_control(self,
                       iteration,
