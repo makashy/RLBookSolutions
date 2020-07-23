@@ -16,10 +16,11 @@ GOAL = 5
 AGENT = 1
 NULL = 0
 
-REWARD_WIN = 100
-REWARD_DEATH = -100
-REWARD_WUMPUS_KILLING = 20
+REWARD_WIN = 50
+REWARD_DEATH = -20
+REWARD_WUMPUS_KILLING = 10
 REWARD_ARROW_FINDING = 5
+REWARD_DEFAULT = -1
 
 MOVE_DIRECTION = {'UP': 0, 'RIGHT': 1, 'DOWN': 2, 'LEFT': 3}
 
@@ -113,7 +114,7 @@ class agent():
             self.agent = new_location
 
         # immediate reward
-        reward = -1
+        reward = REWARD_DEFAULT
 
         if self.episode_map[new_location] == PIT:
             reward = REWARD_DEATH
@@ -239,7 +240,7 @@ class agent():
         while count < iteration:
             self.agent_arrow = 0
             self.episode_map = self.map.copy()
-            self.debug(count / np.float(iteration))
+            # self.debug(count / np.float(iteration))
             count = count + 1
             episode = self.random_episode()
             G = 0
@@ -280,7 +281,7 @@ class agent():
         while count < iteration:
             self.agent_arrow = 0
             self.episode_map = self.map.copy()
-            self.debug(count / np.float(iteration))
+            # self.debug(count / np.float(iteration))
             count = count + 1
             episode = self.epsilon_greedy_episode(Q, epsilon)
             G = 0
@@ -312,7 +313,7 @@ class agent():
         while count < iteration:
             self.agent_arrow = 0
             self.episode_map = self.map.copy()
-            self.debug(count / np.float(iteration))
+            # self.debug(count / np.float(iteration))
             count = count + 1
 
             # Initialize S
@@ -359,7 +360,7 @@ class agent():
         while count < iteration:
             self.agent_arrow = 0
             self.episode_map = self.map.copy()
-            self.debug(count / np.float(iteration))
+            # self.debug(count / np.float(iteration))
             count = count + 1
 
             # Initialize S
